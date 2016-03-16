@@ -142,12 +142,18 @@ workflow Trigger-MediaFiles-Copy
 
     $DirectoryNameFilter = @()
     $DirectoryNameFilterString = Get-AutomationVariable –Name "DirectoryNameFilter"
+	If ([string]::IsNullOrEmpty($DirectoryNameFilterString) -eq $false -and $DirectoryNameFilterString -eq "*.*") {
+		$DirectoryNameFilterString = $DirectoryNameFilterString -replace "*", ""
+	}
     If ([string]::IsNullOrEmpty($DirectoryNameFilterString) -eq $false) {
         $DirectoryNameFilter = ($DirectoryNameFilterString.Split(",").Trim() | sort)
     }
     
     $FileNameFilter = @()
     $FileNameFilterString = Get-AutomationVariable –Name "FileNameFilter"
+	If ([string]::IsNullOrEmpty($FileNameFilterString) -eq $false -and $FileNameFilterString -eq "*.*") {
+		$FileNameFilterString = $FileNameFilterString -replace "*.*", ""
+	}
     If ([string]::IsNullOrEmpty($FileNameFilterString) -eq $false) {
         $FileNameFilter = ($FileNameFilterString.Split(",").Trim() | sort)
     }

@@ -92,10 +92,10 @@ workflow MediaFiles-AssetsInput
 	
   	# Set empty string if input is null   
     If ([string]::IsNullOrEmpty($DirectoryNameFilter) -eq $false) {
-        $DirectoryNameFilter = ""
+        $DirectoryNameFilter = "*"
     }
     If ([string]::IsNullOrEmpty($FileNameFilter) -eq $false) {
-        $FileNameFilter = ""
+        $FileNameFilter = "*.*"
     }
 	   
 	# Add all new assets in collection object
@@ -203,7 +203,7 @@ workflow MediaFiles-AssetsInput
 		# Print asset name & value
 		Write-Output "$AssetVariableName : $AssetValue"
         
-        If ((($AssetList) | Where-Object {$_.Name -eq $AssetVariableName}) -ne $null) {
+        If ($AssetList -ne $null -and (($AssetList) | Where-Object {$_.Name -eq $AssetVariableName}) -ne $null) {
             $asset = Set-AzureAutomationVariable -AutomationAccountName $AutomationAccountName -Name $AssetVariableName -Encrypted $false -Value $AssetValue
             Write-Output "$AssetVariableName asset updated"
         }
