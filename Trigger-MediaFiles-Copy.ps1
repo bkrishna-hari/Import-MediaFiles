@@ -666,11 +666,11 @@ workflow Trigger-MediaFiles-Copy
             		foreach ($fileNameFilterValue in $FileNameFilter)
             		{
             			if ($IsJournalFileAdded -eq $false) {
-            			    $azcopyfilescontent += ".\AzCopy.exe /Source:`'$($directoryFullPath)`' /Dest:'$StorageContainerUrl$($directoryPath + "/")' /DestKey:`'$StorageAccountKey`' /Pattern:`'$fileNameFilterValue`' /S /Y /Z:`'$JournalfolderPath`' /V:`'$LogFileName`' `n " 
+            			    $azcopyfilescontent += ".\AzCopy.exe /Source:`'$($directoryFullPath)`' /Dest:'$StorageContainerUrl$($directoryPath + "/")' /DestKey:`'$StorageAccountKey`' /Pattern:`'$fileNameFilterValue`' /S /Y /XO /Z:`'$JournalfolderPath`' /V:`'$LogFileName`' `n " 
             			    $IsJournalFileAdded = $true
             			}
             			else {
-            			    $azcopyfilescontent += ".\AzCopy.exe /Source:`'$($directoryFullPath)`' /Dest:'$StorageContainerUrl$($directoryPath + "/")' /DestKey:`'$StorageAccountKey`' /Pattern:`'$fileNameFilterValue`' /S /Y /V:`'$LogFileName`' `n "
+            			    $azcopyfilescontent += ".\AzCopy.exe /Source:`'$($directoryFullPath)`' /Dest:'$StorageContainerUrl$($directoryPath + "/")' /DestKey:`'$StorageAccountKey`' /Pattern:`'$fileNameFilterValue`' /S /Y /XO /V:`'$LogFileName`' `n "
             			}
             		}
             	}
