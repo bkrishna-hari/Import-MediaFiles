@@ -85,18 +85,19 @@ workflow MediaFiles-AssetsInput
 		[ValidateNotNullOrEmpty()]
         [string]$FileNameFilter,
 
-        [parameter(Mandatory=$true, Position=15, HelpMessage="The name of the Aumation account name")]
+        [parameter(Mandatory=$true, Position=14, HelpMessage="The name of the Aumation account name")]
 		[ValidateNotNullOrEmpty()]
         [String]$AutomationAccountName
     )
-    
+	
+  	# Set empty string if input is null   
     If ([string]::IsNullOrEmpty($DirectoryNameFilter) -eq $false) {
         $DirectoryNameFilter = ""
     }
     If ([string]::IsNullOrEmpty($FileNameFilter) -eq $false) {
         $FileNameFilter = ""
     }
-    
+	   
 	# Add all new assets in collection object
     $NewAssetList = @()
     $AssetProp = @{ Name="AzureSubscriptionName"; Value=$AzureSubscriptionName; IsMandatory=$true; }
@@ -150,7 +151,6 @@ workflow MediaFiles-AssetsInput
     $AssetProp = @{ Name="FileNameFilter"; Value=$FileNameFilter; IsMandatory=$false; }
     $AssetObj = New-Object PSObject -Property $AssetProp
     $NewAssetList += $AssetObj
-
 	
 	# Validate all mandatory parameters
 	InlineScript 
@@ -188,13 +188,12 @@ workflow MediaFiles-AssetsInput
     
     # Fetch asset list in Automation account
     try {
-        $AssetList = (Get-AzureAutomationVariable -AutomationAccountName $AutomationAccountName)
+        $AssetList = (Get-AzureAutomationVariable -AutomationAccountName $AutomationAccountName)  
     }
     catch {
         throw "The Automation account ($AutomationAccountName) is not found."
     }
-
-    
+	
 	Write-Output "Initiating to create assets"
     foreach ($NewAssetData in $NewAssetList)
     {
