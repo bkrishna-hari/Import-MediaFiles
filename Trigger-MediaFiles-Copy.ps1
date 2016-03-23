@@ -210,6 +210,10 @@ workflow Trigger-MediaFiles-Copy
     $VMProp = @{ Type = "VM"; Name=$VMName; ServiceName=$VMServiceName; Status=$TargetVM.Status }
     $VMObj = New-Object PSObject -Property $VMProp
     $SystemList += $VMObj
+	
+    # Add checkpoint even If the runbook is suspended by an error, when the job is resumed, 
+    # it will resume from the point of the last checkpoint set.
+    Checkpoint-Workflow
     
     # Turning the SVA on
     Write-Output "Attempting to turn on the SVA & VM"
@@ -772,12 +776,15 @@ workflow Trigger-MediaFiles-Copy
         $result = Set-AzureVMCustomScriptExtension -VM $AzureVM -FileUri $sasuri -Run $ScriptName | Update-AzureVM
     }
 	
-    # Add checkpoint even If the runbook is suspended by an error, when the job is resumed, 
-    # it will resume from the point of the last checkpoint set.
-    Checkpoint-Workflow
+    # Clear the value
+    $content = $null
 
     # Sleep for 60 seconds before initiate to verify the AzCopy status
     Start-Sleep -s $SLEEPTIMEOUT
+	
+    # Add checkpoint even If the runbook is suspended by an error, when the job is resumed, 
+    # it will resume from the point of the last checkpoint set.
+    Checkpoint-Workflow
 	    
     Write-Output "Attempting to verify AzCopy status"
     Write-Output "AzCopy log file location: $AzCopyLogFolderPath"
