@@ -142,24 +142,24 @@ workflow Trigger-MediaFiles-Copy
 	
     $DirectoryNameFilter = @()
     $DirectoryNameFilterString = Get-AutomationVariable –Name "DirectoryNameFilter"
-	If ([string]::IsNullOrEmpty($DirectoryNameFilterString) -eq $false -and ($DirectoryNameFilterString).Trim() -eq "*") {
-		$DirectoryNameFilterString = $DirectoryNameFilterString.Trim().Replace("*", "")  # $DirectoryNameFilterString.Trim() -replace "*", "")
-	}
+    If ([string]::IsNullOrEmpty($DirectoryNameFilterString) -eq $false -and ($DirectoryNameFilterString).Trim() -eq "*") {
+    	$DirectoryNameFilterString = $DirectoryNameFilterString.Trim().Replace("*", "")
+    }
     If ([string]::IsNullOrEmpty($DirectoryNameFilterString) -eq $false) {
         $DirectoryNameFilter = ($DirectoryNameFilterString.Trim().Split(",").Trim() | sort)
     }
     
     $FileNameFilter = @()
     $FileNameFilterString = Get-AutomationVariable –Name "FileNameFilter"
-	If ([string]::IsNullOrEmpty($FileNameFilterString) -eq $false) {
+    If ([string]::IsNullOrEmpty($FileNameFilterString) -eq $false) {
         $FileNameFilter = ($FileNameFilterString.Trim().Split(",").Trim() | sort)
     }
     else {
         $FileNameFilter = @("*.*") 
     }
     
-	Write-Output "DirectoryNameFilter: $DirectoryNameFilter"
-	Write-Output "FileNameFilter: $FileNameFilter"
+    Write-Output "DirectoryNameFilter: $DirectoryNameFilter"
+    Write-Output "FileNameFilter: $FileNameFilter"
 	
     # Remove VM service extension 
     $VMServiceName = (($VMServiceName -replace ".cloudapp.net", "") -replace "http://", "")
@@ -699,7 +699,7 @@ workflow Trigger-MediaFiles-Copy
         $VMServiceName = $Using:VMServiceName
         $StorageAccountName = $Using:StorageAccountName
         $StorageAccountKey = $Using:StorageAccountKey
-		$StorageContainerName = $Using:StorageContainerName
+	$StorageContainerName = $Using:StorageContainerName
         $AzCopyLogFile = $Using:AzCopyLogFile
         $AzCopyLogFolderPath = $Using:AzCopyLogFolderPath
         $content = $Using:content
@@ -771,6 +771,10 @@ workflow Trigger-MediaFiles-Copy
         Write-Output "  Running script on the VM"         
         $result = Set-AzureVMCustomScriptExtension -VM $AzureVM -FileUri $sasuri -Run $ScriptName | Update-AzureVM
     }
+	
+    # Add checkpoint even If the runbook is suspended by an error, when the job is resumed, 
+    # it will resume from the point of the last checkpoint set.
+    Checkpoint-Workflow
 
     # Sleep for 60 seconds before initiate to verify the AzCopy status
     Start-Sleep -s $SLEEPTIMEOUT
@@ -801,6 +805,10 @@ workflow Trigger-MediaFiles-Copy
 			Write-Output "  AzCopy execution process completed"
 		}
     }
+	
+    # Add checkpoint even If the runbook is suspended by an error, when the job is resumed, 
+    # it will resume from the point of the last checkpoint set.
+    Checkpoint-Workflow
 	 
     Write-Output "Waiting to clean up volumes & turn off the system"
     Start-Sleep -s $SLEEPTIMEOUT
@@ -850,6 +858,10 @@ workflow Trigger-MediaFiles-Copy
             $RetryCount = 2 # To stop the iteration; similar 'break' statement
         }
     }
+	
+    # Add checkpoint even If the runbook is suspended by an error, when the job is resumed, 
+    # it will resume from the point of the last checkpoint set.
+    Checkpoint-Workflow
 
     Write-Output "Initiating cleanup of volumes & volume containers"
     InlineScript
@@ -940,6 +952,10 @@ workflow Trigger-MediaFiles-Copy
             }
         }
     }
+	
+    # Add checkpoint even If the runbook is suspended by an error, when the job is resumed, 
+    # it will resume from the point of the last checkpoint set.
+    Checkpoint-Workflow
     
     Write-Output "Attempting to shutdown the SVA & VM"
     foreach ($SystemInfo in $SystemList)
