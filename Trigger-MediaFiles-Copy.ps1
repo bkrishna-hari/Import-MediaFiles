@@ -55,7 +55,7 @@ workflow Trigger-MediaFiles-Copy
     {
         throw "The AzureCredential asset has not been created in the Automation service."  
     }
-        
+    
     $VMCredential = Get-AutomationPSCredential -Name "VMCredential"
     If ($VMCredential -eq $null) 
     {
@@ -143,7 +143,7 @@ workflow Trigger-MediaFiles-Copy
     $DirectoryNameFilter = @()
     $DirectoryNameFilterString = Get-AutomationVariable –Name "DirectoryNameFilter"
     If ([string]::IsNullOrEmpty($DirectoryNameFilterString) -eq $false -and ($DirectoryNameFilterString).Trim() -eq "*") {
-    	$DirectoryNameFilterString = $DirectoryNameFilterString.Trim().Replace("*", "")
+        $DirectoryNameFilterString = $DirectoryNameFilterString.Trim().Replace("*", "")
     }
     If ([string]::IsNullOrEmpty($DirectoryNameFilterString) -eq $false) {
         $DirectoryNameFilter = ($DirectoryNameFilterString.Trim().Split(",").Trim() | sort)
@@ -173,6 +173,9 @@ workflow Trigger-MediaFiles-Copy
         throw "Unable to connect to Azure"
     }
     
+    # Clear variable value
+    $AzureCredential = $null
+	 
     # Connect to StorSimple 
     Write-Output "Connecting to StorSimple"                
     $StorSimpleResource = Select-AzureStorSimpleResource -ResourceName $ResourceName -RegistrationKey $RegistrationKey
@@ -211,9 +214,17 @@ workflow Trigger-MediaFiles-Copy
     $VMObj = New-Object PSObject -Property $VMProp
     $SystemList += $VMObj
 	
+    # Clear variable value
+    $VMCredential = $null
+	
     # Add checkpoint even If the runbook is suspended by an error, when the job is resumed, 
     # it will resume from the point of the last checkpoint set.
     Checkpoint-Workflow
+    
+    $VMCredential = Get-AutomationPSCredential -Name "VMCredential"
+    If ($VMCredential -eq $null) {
+        throw "The VMCredential asset has not been created in the Automation service."  
+    }
     
     # Turning the SVA on
     Write-Output "Attempting to turn on the SVA & VM"
@@ -333,15 +344,15 @@ workflow Trigger-MediaFiles-Copy
         Invoke-Command -ConnectionUri $Using:VMWinRMUri -Credential $Using:VMCredential -ScriptBlock {
             param([Int]$SLEEPTIMEOUTSMALL)
 			
-			# Install AzCopy
+            # Install AzCopy
             $source = "http://aka.ms/downloadazcopy"
             $destination = "C:\Users\Public\Downloads\AzCopy.msi" 
             $AzCopyPath = "C:\Program Files (x86)\Microsoft SDKs\Azure\AzCopy\AzCopy.exe"
 			
-			# Trigger to download AzCopy software
-			Invoke-WebRequest $source -OutFile $destination
+            # Trigger to download AzCopy software
+            Invoke-WebRequest $source -OutFile $destination
 			
-			#wait till the file is downloaded
+            # Wait till the file is downloaded
             while ($true)
             {
                 $checkForFile = (Test-Path $destination)
@@ -360,7 +371,7 @@ workflow Trigger-MediaFiles-Copy
             Start-Service msiscsi
             Start-Sleep -s $SLEEPTIMEOUTSMALL
 			
-			# Set default setting
+            # Set default setting
             Set-Service msiscsi -StartupType "Automatic"
             
             # Getting VM initiator name
@@ -394,6 +405,18 @@ workflow Trigger-MediaFiles-Copy
         }
         
         $AcrName = $VMAcr.Name
+    }
+	
+    # Clear variable value
+    $VMCredential = $null
+	
+    # Add checkpoint even If the runbook is suspended by an error, when the job is resumed, 
+    # it will resume from the point of the last checkpoint set.
+    Checkpoint-Workflow
+    
+    $VMCredential = Get-AutomationPSCredential -Name "VMCredential"
+    If ($VMCredential -eq $null) {
+        throw "The VMCredential asset has not been created in the Automation service."  
     }
     
     Write-Output "Attempting to fetch the volume list"
@@ -510,6 +533,18 @@ workflow Trigger-MediaFiles-Copy
     If ($SVAIQN -eq $null) {
         throw "Unable to fetch IQN of the SVA ($TargetDeviceName)"
     }
+	
+    # Clear variable value
+    $VMCredential = $null
+	
+    # Add checkpoint even If the runbook is suspended by an error, when the job is resumed, 
+    # it will resume from the point of the last checkpoint set.
+    Checkpoint-Workflow
+    
+    $VMCredential = Get-AutomationPSCredential -Name "VMCredential"
+    If ($VMCredential -eq $null) {
+        throw "The VMCredential asset has not been created in the Automation service."  
+    }
     
     # Create the iSCSI target portal and mount the volumes, return the drive letters of the mounted StorSimple volumes
     Write-Output "Create the iSCSI target portal and mount the volumes"
@@ -600,6 +635,18 @@ workflow Trigger-MediaFiles-Copy
     
     # Set Drivelist
     $DrivesList = $drives.Split(",").Trim()
+	
+    # Clear variable value
+    $VMCredential = $null
+	
+    # Add checkpoint even If the runbook is suspended by an error, when the job is resumed, 
+    # it will resume from the point of the last checkpoint set.
+    Checkpoint-Workflow
+    
+    $VMCredential = Get-AutomationPSCredential -Name "VMCredential"
+    If ($VMCredential -eq $null) {
+        throw "The VMCredential asset has not been created in the Automation service."  
+    }
     
     Write-Output "Fetching matched folders/files..."
     $content = InlineScript {
@@ -644,7 +691,7 @@ workflow Trigger-MediaFiles-Copy
             			
             	$azcopyfilescontent = $null
             	$IsJournalFileAdded = $false
-            	$JournalfolderPath = $AzCopyLogFolderPath + "journalfolder-$(Get-Date -format MMddyyyyhhmmss)\"
+            	$JournalfolderPath = $AzCopyLogFolderPath + "journalfolder-$(Get-Date -format yyyyMMddhhmmss)\"
             	foreach ($directoryData in $listOfDirectories)
             	{
                     $driveLetter = $directoryData
@@ -652,36 +699,36 @@ workflow Trigger-MediaFiles-Copy
                     $directoryPath = ($directoryFullPath -replace ":\\", "")
                     If ($directoryData.PsDrive -ne $null) {
             		    $driveLetter = $directoryData.PsDrive.ToString()
-                        $directoryFullPath = $directoryData.FullName
+                            $directoryFullPath = $directoryData.FullName
             		    $directoryPath = (($directoryFullPath -replace ":\\", "/") -replace "\\", "/")
                     }
             
-            		$LogFileName = ($AzCopyLogFile -replace "DriveLetter", $directoryPath)	        
+            	    $LogFileName = ($AzCopyLogFile -replace "DriveLetter", $directoryPath)	        
             			        
-            		if ($azcopyfilescontent -eq $null) {
-            			# Join Folder path & filename
-            			$AzCopyLogFileFormat = (Split-Path $AzCopyLogFile -Leaf) -replace "DriveLetter", "*"
+            	    if ($azcopyfilescontent -eq $null) {
+            		    # Join Folder path & filename
+            		    $AzCopyLogFileFormat = (Split-Path $AzCopyLogFile -Leaf) -replace "DriveLetter", "*"
             			                                                
-            			# Delete all existing logs & ps files
-            			$azcopyfilescontent = "# Delete all available AzCopy log files `n "
-            			$azcopyfilescontent += "Get-ChildItem `'$AzCopyLogFolderPath`' `'$AzCopyLogFileFormat`' -Force | Remove-Item -Confirm:`$false -Force; `n "
+            		    # Delete all existing logs & ps files
+            		    $azcopyfilescontent = "# Delete all available AzCopy log files `n "
+            		    $azcopyfilescontent += "Get-ChildItem `'$AzCopyLogFolderPath`' `'$AzCopyLogFileFormat`' -Force | Remove-Item -Confirm:`$false -Force; `n "
             			                       
-            			# Small delay before create script file
-            			$azcopyfilescontent += "Start-Sleep -s $SLEEPTIMEOUT `n `n "
+            		    # Small delay before create script file
+            		    $azcopyfilescontent += "Start-Sleep -s $SLEEPTIMEOUT `n `n "
             			                                         
-            			$azcopyfilescontent += "# Trigger AzCopy `n "
-            			$azcopyfilescontent += "cd 'C:\Program Files (x86)\Microsoft SDKs\Azure\AzCopy' `n "
-            		}
+            		    $azcopyfilescontent += "# Trigger AzCopy `n "
+            		    $azcopyfilescontent += "cd 'C:\Program Files (x86)\Microsoft SDKs\Azure\AzCopy' `n "
+            	    }
             			
-            		foreach ($fileNameFilterValue in $FileNameFilter)
-            		{
-            			if ($IsJournalFileAdded -eq $false) {
-            			    $azcopyfilescontent += ".\AzCopy.exe /Source:`'$($directoryFullPath)`' /Dest:'$StorageContainerUrl$($directoryPath + "/")' /DestKey:`'$StorageAccountKey`' /Pattern:`'$fileNameFilterValue`' /S /Y /XO /Z:`'$JournalfolderPath`' /V:`'$LogFileName`' `n " 
-            			    $IsJournalFileAdded = $true
-            			}
-            			else {
-            			    $azcopyfilescontent += ".\AzCopy.exe /Source:`'$($directoryFullPath)`' /Dest:'$StorageContainerUrl$($directoryPath + "/")' /DestKey:`'$StorageAccountKey`' /Pattern:`'$fileNameFilterValue`' /S /Y /XO /V:`'$LogFileName`' `n "
-            			}
+            	    foreach ($fileNameFilterValue in $FileNameFilter)
+            	    {
+            		    if ($IsJournalFileAdded -eq $false) {
+            		        $azcopyfilescontent += ".\AzCopy.exe /Source:`'$($directoryFullPath)`' /Dest:'$StorageContainerUrl$($directoryPath + "/")' /DestKey:`'$StorageAccountKey`' /Pattern:`'$fileNameFilterValue`' /S /Y /XO /Z:`'$JournalfolderPath`' /V:`'$LogFileName`' `n " 
+            		        $IsJournalFileAdded = $true
+            		    }
+            		    else {
+            		        $azcopyfilescontent += ".\AzCopy.exe /Source:`'$($directoryFullPath)`' /Dest:'$StorageContainerUrl$($directoryPath + "/")' /DestKey:`'$StorageAccountKey`' /Pattern:`'$fileNameFilterValue`' /S /Y /XO /V:`'$LogFileName`' `n "
+            		    }
             		}
             	}
                 
@@ -693,6 +740,18 @@ workflow Trigger-MediaFiles-Copy
     
     If ($content -eq $null -or $content.Length -eq 0) {
         throw "No files match your search."
+    }
+	
+    # Clear variable value
+    $VMCredential = $null
+	
+    # Add checkpoint even If the runbook is suspended by an error, when the job is resumed, 
+    # it will resume from the point of the last checkpoint set.
+    Checkpoint-Workflow
+    
+    $VMCredential = Get-AutomationPSCredential -Name "VMCredential"
+    If ($VMCredential -eq $null) {
+        throw "The VMCredential asset has not been created in the Automation service."  
     }
     
     Write-Output "Attempting to trigger AzCopy"
@@ -707,8 +766,8 @@ workflow Trigger-MediaFiles-Copy
         $AzCopyLogFile = $Using:AzCopyLogFile
         $AzCopyLogFolderPath = $Using:AzCopyLogFolderPath
         $content = $Using:content
-		$AzCopyLogFolderPath = $Using:AzCopyLogFolderPath
-		$AzCopyLogFile = $Using:AzCopyLogFile
+	$AzCopyLogFolderPath = $Using:AzCopyLogFolderPath
+	$AzCopyLogFile = $Using:AzCopyLogFile
         
         # Convert to lower case coz volume container name allows lower case letters, numbers & hypens only
         $ScriptContainer = $ScriptContainer.ToLower()
@@ -770,21 +829,27 @@ workflow Trigger-MediaFiles-Copy
         }
                            
         Write-Output "  Installing custom script extension" 
-        $result = Set-AzureVMExtension -ExtensionName CustomScriptExtension -VM $AzureVM -Publisher Microsoft.Compute -Version 1.7 | Update-AzureVM    
+        $result = Set-AzureVMExtension -ExtensionName CustomScriptExtension -VM $AzureVM -Publisher Microsoft.Compute -Version 1.8 | Update-AzureVM    
                                         
         Write-Output "  Running script on the VM"         
         $result = Set-AzureVMCustomScriptExtension -VM $AzureVM -FileUri $sasuri -Run $ScriptName | Update-AzureVM
     }
 	
-    # Clear the value
+    # Clear variable value
+    $VMCredential = $null
     $content = $null
-
-    # Sleep for 60 seconds before initiate to verify the AzCopy status
-    Start-Sleep -s $SLEEPTIMEOUT
 	
     # Add checkpoint even If the runbook is suspended by an error, when the job is resumed, 
     # it will resume from the point of the last checkpoint set.
     Checkpoint-Workflow
+    
+    $VMCredential = Get-AutomationPSCredential -Name "VMCredential"
+    If ($VMCredential -eq $null) {
+        throw "The VMCredential asset has not been created in the Automation service."  
+    }
+
+    # Sleep for 60 seconds before initiate to verify the AzCopy status
+    Start-Sleep -s $SLEEPTIMEOUT
 	    
     Write-Output "Attempting to verify AzCopy status"
     Write-Output "AzCopy log file location: $AzCopyLogFolderPath"
@@ -808,14 +873,10 @@ workflow Trigger-MediaFiles-Copy
             Write-Output "  Waiting for sleep ($SLEEPTIMEOUTLARGE seconds) to be finished"
             Start-Sleep -s $SLEEPTIMEOUTLARGE
         }
-		else {
-			Write-Output "  AzCopy execution process completed"
-		}
+        else {
+            Write-Output "  AzCopy execution process completed"
+        }
     }
-	
-    # Add checkpoint even If the runbook is suspended by an error, when the job is resumed, 
-    # it will resume from the point of the last checkpoint set.
-    Checkpoint-Workflow
 	 
     Write-Output "Waiting to clean up volumes & turn off the system"
     Start-Sleep -s $SLEEPTIMEOUT
@@ -865,6 +926,9 @@ workflow Trigger-MediaFiles-Copy
             $RetryCount = 2 # To stop the iteration; similar 'break' statement
         }
     }
+	
+    # Clear variable value
+    $VMCredential = $null
 	
     # Add checkpoint even If the runbook is suspended by an error, when the job is resumed, 
     # it will resume from the point of the last checkpoint set.
@@ -959,10 +1023,6 @@ workflow Trigger-MediaFiles-Copy
             }
         }
     }
-	
-    # Add checkpoint even If the runbook is suspended by an error, when the job is resumed, 
-    # it will resume from the point of the last checkpoint set.
-    Checkpoint-Workflow
     
     Write-Output "Attempting to shutdown the SVA & VM"
     foreach ($SystemInfo in $SystemList)
